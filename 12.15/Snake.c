@@ -8,21 +8,21 @@ int i;				// 다용도
 
 char key;			// 입력받은 키값을 저장할 변수
 int dir = 0;		// 움직일 방향을 저장할 변수 _ 0:오른쪽(기본값), 1:왼쪽, 2:위, 3:아래
-int cnt = 0;
+int cnt = 0;		// 비동기 조작을 위한 변수
 
 int item_x, item_y;	// 먹이의 좌표를 저장할 변수
 int item_cnt = 0;	// 먹이 먹은 수를 저장할 변수
 
-int length = 3;		// 지렁이의 길이를 저장할 변수
+int length = 1;		// 지렁이의 길이를 저장할 변수
 int speed;			// 지렁이의 속도를 저장할 변수
+int score = 0;		// 점수를 저장할 변수
 
-int is_feed;		// 먹이를 먹었는지 여부를 저장할 변수 _ 0: 안 먹음, 1: 먹음 
+int is_feed = 0;	// 먹이를 먹었는지 여부를 저장할 변수 _ 0: 안 먹음, 1: 먹음 
 int is_collide = 0;	// 충돌 여부를 저장할 변수 _ 0: 충돌 안함, 1: 충돌
 
-int x[100] = {3,4,5};		// 처음 위치 (x좌표)
-int y[100] = {3,3,3};		// 처음 위치 (y좌표)
-
-int new_x, new_y;			// ㅁㄴㅇㄹ
+int x[100] = {3};	// 처음 위치 (x좌표)
+int y[100] = {3};	// 처음 위치 (y좌표)
+int new_x, new_y;	// 먹이와 충돌시 새 좌표를 임시적으로 저장할 좌표
 
 /* gotoxy 함수 : 입력받은 좌표로 커서를 이동시킴 */
 int gotoxy(int x,int y) 
@@ -72,9 +72,9 @@ int main()
 	}
 	printf("+-----------------------------+\n"); // 맨 아랫줄 장식
 	
-	/* 먹은 먹이 수(초기값 0)를 출력 */
+	/* 점수(초기값 0)을 출력 */
 	gotoxy(0,17);
-	printf("먹은 먹이 수: %d", item_cnt);
+	printf("Score: %d", score);
 	
 	/* 먹이의 좌표를 랜덤으로 지정 */
 	item_x = (rand() % 29) + 1; // x좌표 출력 범위: 1 ~ 29 
@@ -107,69 +107,79 @@ int main()
 				dir = 0;
 		}
 
+		/* 벽이나 자기 몸에 부딪히면 종료 */
 		if (collisionDetect() == 1)
 			break;
 
+		/* 먹이에 부딪혔을 때 먹이 수 카운트, 점수 올리기 */
 		if (collisionDetect() == 2)
 		{
-			is_feed = 1;
+			is_feed = 1;				// 먹이를 먹었음
 
+			/* 새로운 먹이의 좌표를 지정 */
 			item_x = (rand() % 29) + 1; // x좌표 출력 범위: 1 ~ 29
 			item_y = (rand() % 15) + 1; // y좌표 출력 범위: 1 ~ 15
 
-			gotoxy(item_x,item_y);
+			/* 새로운 먹이의 위치에 새로운 먹이를 출력 */
+			gotoxy(item_x, item_y);
 			printf("@");
 
-			item_cnt++;
-			gotoxy(0,17);
-			printf("먹은 먹이 수: %d", item_cnt);
+			item_cnt++;						// 먹이 먹은 수를 증가
+			score = score + (length * 10);	// 점수를 올림
 
-			if (dir == 0)
+			gotoxy(0,17);					
+			printf("Score: %d", score);		// 점수 출력
+
+			/* 먹이 먹었을 때 지렁이가 향하는 방향에 따라 새 지렁이가 생성되는 위치를 달리 함 */
+			if (dir == 0)				// 오른쪽을 향할 때
 			{
 				new_x = x[length-1] + 1;
 				new_y = y[length-1];
 			}
 
-			else if (dir == 1)
+			else if (dir == 1)			// 왼쪽을 향할 때
 			{
 				new_x = x[length-1] - 1;
 				new_y = y[length-1];
 			}
 				
-			else if (dir == 2)
+			else if (dir == 2)			// 위쪽을 향할 때
 			{
 				new_x = x[length-1];
 				new_y = y[length-1] - 1;
 			}
 
-			else if (dir == 3)
+			else if (dir == 3)			// 아래쪽을 향할 때
 			{
 				new_x = x[length-1];
 				new_y = y[length-1] + 1;
 			}
 
+			/* 새로운 머리를 출력 */
 			gotoxy(new_x,new_y);
 			printf("*");
 				
-			length++;
+			length++;			// 길이를 증가
 
+			/* 새 좌표를 이식 */
 			x[length-1] = new_x;
 			y[length-1] = new_y;
 
-			is_feed = 0;
+			is_feed = 0;		// is_feed의 값을 다시 0으로 환원
 		}
 
 		while ((cnt++) % speed == 0)
 		{
 			is_collide = collisionDetect();
 
-			if (is_collide == 1)
+			if (is_collide == 1) // is_collide가 1일 때 빠져나옴
 			{
 				break;
-			} else 
+			} 
+			else 
 			{
 				/* 꼬리 지우기 */
-				gotoxy(x[0],y[0]);
+				gotoxy(x[0], y[0]);
 				printf(" ");
 
 				/* 몸통 움직이기 */
@@ -191,10 +201,25 @@ int main()
 					y[length-1]++;	// 아래쪽 이동
 
 				/* 새 머리 그리기 */
-				gotoxy(x[length-1],y[length-1]);
+				gotoxy(x[length-1], y[length-1]);
 				printf("*");
 			}
-		Sleep(1000/(10+item_cnt));
+
+		Sleep(1000/(5+item_cnt));
+
 		}
 	}
+
+	/* 테두리에 닿아서 while문 빠져나오면 게임 오버 문구 출력 */
+	gotoxy(10,7);
+	printf("Game Over"); // 게임 오버 출력
+
+	for (i=0 ; i<=4 ; i++)
+	{
+		gotoxy(5,10);
+		printf("%d초 후에 종료됩니다.", 5-i); // 몇 초 남았는지 출력
+		Sleep(1000); // 1초간 휴식
+	}
+
+	return 0;
 }
